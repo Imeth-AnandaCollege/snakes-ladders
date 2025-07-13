@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snakes & Ladders</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎲 Snakes & Ladders</h1>
+
+    <input type="text" id="name" placeholder="Enter your name">
+    <input type="text" id="room" placeholder="Enter room ID">
+
+    <select id="avatar">
+      <option value="🐍">🐍</option>
+      <option value="🪜">🪜</option>
+      <option value="🎲">🎲</option>
+      <option value="👾">👾</option>
+    </select>
+
+    <button id="joinBtn">Join Room</button>
+  </div>
+
+  <!-- Firebase setup & joining logic -->
+  <script type="module" src="lobby.js"></script>
+</body>
+</html>
