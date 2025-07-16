@@ -1,145 +1,102 @@
-/* ==== GENERAL RESET ==== */
 body {
   font-family: 'Segoe UI', sans-serif;
   margin: 0;
-  padding: 10px;
+  padding: 20px;
   text-align: center;
-  color: #fff;
-  min-height: 100vh;
-  background-size: 400% 400%;
-  animation: gradientMove 15s ease infinite;
+  color: #333;
 }
 
-h1 {
-  font-size: 2em;
-  margin-bottom: 0.2em;
-}
-
-/* ==== INDEX PAGE BACKGROUND ==== */
-.index-bg {
-  background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fbc2eb, #a6c1ee);
-}
-
-/* ==== GAME PAGE BACKGROUND ==== */
-.game-bg {
-  background: linear-gradient(-45deg, #667eea, #764ba2, #89f7fe, #66a6ff);
-}
-
-/* ==== GRADIENT ANIMATION ==== */
-@keyframes gradientMove {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* ==== WELCOME & TURN ==== */
-#welcome, #turnInfo {
-  font-size: 1.1em;
-  margin: 5px 0;
-}
-
-/* ==== BOARD ==== */
+/* Board Grid */
 #board {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 1px;
-  max-width: 95vmin;
-  aspect-ratio: 1 / 1;
+  grid-template-columns: repeat(10, 50px);
+  grid-template-rows: repeat(10, 50px);
   margin: 20px auto;
-  border: 2px solid #fff;
+  border: 2px solid #444;
 }
 
+/* Cells */
 .cell {
   position: relative;
-  width: 100%;
-  height: 100%;
-  border: 1px solid #fff3;
+  width: 50px;
+  height: 50px;
+  border: 1px solid #ddd;
   box-sizing: border-box;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: flex-start;
-  font-size: 0.7em;
+  font-size: 10px;
   padding: 2px;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  backdrop-filter: blur(2px);
+  background-color: #fff;
 }
 
-.cell.snake {
-  background-color: rgba(255, 80, 80, 0.4); /* red tint */
+.snake {
+  background-color: #fdd;
+}
+.ladder {
+  background-color: #dfd;
 }
 
-.cell.ladder {
-  background-color: rgba(80, 255, 160, 0.4); /* green tint */
+.number {
+  font-size: 10px;
+  margin: 2px;
 }
 
 .player {
   position: absolute;
-  top: 5%;
-  left: 5%;
-  font-size: 1.2em;
-  z-index: 2;
+  top: 14px;
+  left: 14px;
+  font-size: 20px;
 }
 
-/* ==== BUTTON ==== */
-#rollBtn {
+/* Form & Buttons */
+.form-container {
   margin-top: 20px;
-  padding: 12px 25px;
-  background-color: #fff;
-  color: #222;
-  font-size: 18px;
+}
+input, select, button {
+  padding: 8px;
+  margin: 5px;
+  font-size: 14px;
+}
+
+#rollBtn {
+  margin-top: 15px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background: black;
+  color: white;
   border: none;
-  border-radius: 6px;
   cursor: pointer;
-  width: 90%;
-  max-width: 300px;
-  transition: background 0.3s ease;
 }
 
-#rollBtn:hover {
-  background-color: #ffd700;
+/* Events */
+#eventMsg, #turnInfo {
+  margin-top: 10px;
+  font-weight: bold;
 }
 
-/* ==== PLAYER LIST ==== */
+/* Player List */
 #playerList {
   list-style: none;
   padding: 0;
-  margin-top: 10px;
-  font-size: 1.1em;
+  margin: 10px 0;
 }
 
-/* ==== EVENT MESSAGES ==== */
-#eventMsg {
-  font-weight: bold;
-  margin-top: 10px;
-  max-width: 90vw;
-  word-wrap: break-word;
-  font-size: 1em;
+/* Animated Backgrounds */
+.index-bg {
+  background: linear-gradient(-45deg, #ffecd2, #fcb69f, #ff9a9e, #fad0c4);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
 }
 
-/* ==== MOBILE RESPONSIVE ==== */
-@media (max-width: 500px) {
-  h1 {
-    font-size: 1.6em;
-  }
+.game-bg {
+  background: linear-gradient(-45deg, #a1c4fd, #c2e9fb, #cfd9df, #e2ebf0);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
 
-  .player {
-    font-size: 1em;
-  }
-
-  .cell {
-    font-size: 10px;
-  }
-
-  #rollBtn {
-    font-size: 1em;
-  }
-
-  #eventMsg, #turnInfo {
-    font-size: 0.95em;
-  }
-
-  #playerList {
-    font-size: 1em;
-  }
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
