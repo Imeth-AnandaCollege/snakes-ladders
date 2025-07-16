@@ -1,0 +1,76 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #fef6dd;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+h1 {
+  font-size: 2em;
+  margin-bottom: 0.2em;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(10, 60px);
+  grid-template-rows: repeat(10, 60px);
+  margin: 20px auto;
+  border: 2px solid #444;
+}
+
+.cell {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  font-size: 12px;
+  padding: 2px;
+  background-color: #fff;
+}
+
+.cell.snake {
+  background-color: #ffcccc; /* light red */
+}
+
+.cell.ladder {
+  background-color: #ccffcc; /* light green */
+}
+
+.player {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  font-size: 20px;
+}
+
+#welcome {
+  margin-top: 5px;
+  font-size: 1.1em;
+}
+
+#rollBtn {
+  margin-top: 20px;
+  padding: 10px 25px;
+  background-color: black;
+  color: white;
+  font-size: 18px;
+  border: none;
+  cursor: pointer;
+}
+
+#playerList {
+  margin-top: 10px;
+  list-style: none;
+  padding: 0;
+  font-size: 1.1em;
+}
+
+#eventMsg {
+  font-weight: bold;
+  margin-top: 10px;
+}
