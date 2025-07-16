@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Snakes & Ladders</title>
@@ -7,24 +7,24 @@
 </head>
 <body class="index-bg">
   <h1>🎲 Snakes & Ladders</h1>
-
-  <input id="nameInput" placeholder="Enter Name" />
-  <input id="roomInput" placeholder="Enter Room Code" />
-  <select id="characterSelect">
-    <option value="🧙">🧙</option>
-    <option value="👩‍🚀">👩‍🚀</option>
-    <option value="🐱">🐱</option>
-  </select>
-  <button onclick="joinRoom()">Join Room</button>
-
-  <h3>Players in Room</h3>
+  <div class="form-container">
+    <input type="text" id="nameInput" placeholder="Enter Name">
+    <input type="text" id="roomInput" placeholder="Enter Room Code">
+    <select id="emojiSelect">
+      <option>🐍</option>
+      <option>🐸</option>
+      <option>🐱</option>
+      <option>👽</option>
+      <option>🐼</option>
+    </select>
+    <button onclick="joinRoom()">Join Room</button>
+  </div>
   <ul id="playerList"></ul>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
-  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAU0Iosij4EjVIWJoWrzdglN4VG8m-BrDs",
       authDomain: "snakes-ladders-multiplay-8cef2.firebaseapp.com",
@@ -34,39 +34,45 @@
       messagingSenderId: "884472605666",
       appId: "1:884472605666:web:6e3d428f7bc6a0cc78a7bb"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
 
-    function joinRoom() {
-      const name = document.getElementById("nameInput").value;
-      const room = document.getElementById("roomInput").value;
-      const emoji = document.getElementById("characterSelect").value;
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-      if (!name || !room) return alert("Enter both name and room.");
+    const joinRoom = () => {
+      const name = document.getElementById("nameInput").value.trim();
+      const room = document.getElementById("roomInput").value.trim();
+      const emoji = document.getElementById("emojiSelect").value;
 
-      const playerRef = db.ref(`rooms/${room}/players/${name}`);
-      playerRef.set({
-        emoji: emoji,
-        position: 1
-      }).then(() => {
-        window.location.href = `game.html?room=${room}&name=${name}`;
-      });
-    }
+      if (!name || !room) return alert("Please fill in both fields.");
 
-    document.getElementById("roomInput").addEventListener("input", () => {
-      const room = document.getElementById("roomInput").value;
-      if (room) {
-        db.ref(`rooms/${room}/players`).on("value", (snapshot) => {
-          const players = snapshot.val() || {};
-          const playerList = document.getElementById("playerList");
-          playerList.innerHTML = "";
-          for (const [name, data] of Object.entries(players)) {
+      const playerRef = ref(db, `rooms/${room}/players/${name}`);
+      set(playerRef, { emoji, position: 1 });
+
+      const turnRef = ref(db, `rooms/${room}/turn`);
+      set(turnRef, name); // initialize turn
+
+      window.location.href = `game.html?room=${room}&name=${name}`;
+    };
+
+    const roomInput = document.getElementById("roomInput");
+    const playerList = document.getElementById("playerList");
+
+    roomInput.addEventListener("input", () => {
+      const room = roomInput.value.trim();
+      if (!room) return playerList.innerHTML = "";
+
+      const playersRef = ref(db, `rooms/${room}/players`);
+      onValue(playersRef, snapshot => {
+        const players = snapshot.val();
+        playerList.innerHTML = "";
+        if (players) {
+          Object.keys(players).forEach(p => {
             const li = document.createElement("li");
-            li.textContent = `${data.emoji} ${name}`;
+            li.textContent = `${players[p].emoji} ${p}`;
             playerList.appendChild(li);
-          }
-        });
-      }
+          });
+        }
+      });
     });
   </script>
 </body>
