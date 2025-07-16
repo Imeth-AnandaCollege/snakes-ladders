@@ -1,28 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Snakes & Ladders</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>🎲 Snakes & Ladders</h1>
+  <h1>🎲 Snakes & Ladders</h1>
 
-    <input type="text" id="name" placeholder="Enter your name">
-    <input type="text" id="room" placeholder="Enter room ID">
+  <input id="nameInput" placeholder="Enter Name" />
+  <input id="roomInput" placeholder="Enter Room Code" />
+  <select id="characterSelect">
+    <option value="🧙">🧙</option>
+    <option value="👩‍🚀">👩‍🚀</option>
+    <option value="🐱">🐱</option>
+  </select>
+  <button onclick="joinRoom()">Join Room</button>
 
-    <select id="avatar">
-      <option value="🐍">🐍</option>
-      <option value="🪜">🪜</option>
-      <option value="🎲">🎲</option>
-      <option value="👾">👾</option>
-    </select>
+  <h3>Players in Room</h3>
+  <ul id="playerList"></ul>
 
-    <button id="joinBtn">Join Room</button>
-  </div>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <!-- Firebase setup & joining logic -->
-  <script type="module" src="lobby.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAU0Iosij4EjVIWJoWrzdglN4VG8m-BrDs",
+      authDomain: "snakes-ladders-multiplay-8cef2.firebaseapp.com",
+      databaseURL: "https://snakes-ladders-multiplay-8cef2-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "snakes-ladders-multiplay-8cef2",
+      storageBucket: "snakes-ladders-multiplay-8cef2.appspot.com",
+      messagingSenderId: "884472605666",
+      appId: "1:884472605666:web:6e3d428f7bc6a0cc78a7bb"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function joinRoom() {
+      const name = document.getElementById("nameInput").value;
+      const room = document.getElementById("roomInput").value;
+      const emoji = document.getElementById("characterSelect").value;
+
+      if (!name || !room) return alert("Enter both name and room.");
+
+      const playerRef = db.ref(`rooms/${room}/players/${name}`);
+      playerRef.set({
+        emoji: emoji,
+        position: 1
+      }).then(() => {
+        window.location.href = `game.html?room=${room}&name=${name}`;
+      });
+    }
+
+    document.getElementById("roomInput").addEventListener("input", () => {
+      const room = document.getElementById("roomInput").value;
+      if (room) {
+        db.ref(`rooms/${room}/players`).on("value", (snapshot) => {
+          const players = snapshot.val() || {};
+          const playerList = document.getElementById("playerList");
+          playerList.innerHTML = "";
+          for (const [name, data] of Object.entries(players)) {
+            const li = document.createElement("li");
+            li.textContent = `${data.emoji} ${name}`;
+            playerList.appendChild(li);
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>

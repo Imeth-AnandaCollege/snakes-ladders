@@ -1,21 +1,165 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Snakes & Ladders</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Snakes & Ladders - Game</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>🎲 Welcome to the Game Room</h1>
-  <p id="welcomeMsg"></p>
+  <p id="welcome"></p>
 
-  <div class="board-container">
-    <div id="board" class="board"></div>
-  </div>
+  <h3>Players in this Room</h3>
+  <ul id="playerList"></ul>
 
-  <button id="rollDiceBtn">🎲 Roll Dice</button>
+  <h4 id="turnInfo">🔁 Waiting for your turn...</h4>
 
-  <script type="module" src="game.js"></script>
+  <div id="board"></div>
+  <button id="rollBtn" disabled>🎲 Roll Dice</button>
+  <p id="eventMsg"></p>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAU0Iosij4EjVIWJoWrzdglN4VG8m-BrDs",
+      authDomain: "snakes-ladders-multiplay-8cef2.firebaseapp.com",
+      databaseURL: "https://snakes-ladders-multiplay-8cef2-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "snakes-ladders-multiplay-8cef2",
+      storageBucket: "snakes-ladders-multiplay-8cef2.appspot.com",
+      messagingSenderId: "884472605666",
+      appId: "1:884472605666:web:6e3d428f7bc6a0cc78a7bb"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const params = new URLSearchParams(location.search);
+    const room = params.get("room");
+    const name = params.get("name");
+
+    document.getElementById("welcome").textContent = `Hello ${name}, welcome to room "${room}"!`;
+
+    const snakes = {
+      16: 6, 47: 26, 49: 11, 56: 53, 62: 19,
+      64: 60, 87: 24, 93: 73, 95: 75, 98: 78
+    };
+
+    const ladders = {
+      1: 38, 4: 14, 9: 31, 21: 42, 28: 84,
+      36: 44, 51: 67, 71: 91, 80: 100
+    };
+
+    const board = document.getElementById("board");
+    const msg = document.getElementById("eventMsg");
+    const rollBtn = document.getElementById("rollBtn");
+    const turnInfo = document.getElementById("turnInfo");
+
+    let allPlayers = {};
+
+    function renderBoard(players = {}) {
+      board.innerHTML = "";
+      for (let row = 9; row >= 0; row--) {
+        let reverse = row % 2 === 1;
+        for (let col = 0; col < 10; col++) {
+          let num = row * 10 + (reverse ? (9 - col + 1) : col + 1);
+          const div = document.createElement("div");
+          div.className = "cell";
+          if (snakes[num]) div.classList.add("snake");
+          if (ladders[num]) div.classList.add("ladder");
+
+          div.innerHTML = `<span class="cell-num">${num}</span>`;
+
+          for (const playerName in players) {
+            const p = players[playerName];
+            if (p.position === num) {
+              const token = document.createElement("div");
+              token.className = "player";
+              token.textContent = p.emoji;
+              div.appendChild(token);
+            }
+          }
+
+          board.appendChild(div);
+        }
+      }
+    }
+
+    function updatePlayerList(players) {
+      const playerList = document.getElementById("playerList");
+      playerList.innerHTML = "";
+      for (const player in players) {
+        const li = document.createElement("li");
+        li.textContent = `${players[player].emoji} ${player}`;
+        playerList.appendChild(li);
+      }
+    }
+
+    function setTurn(newPlayers) {
+      const keys = Object.keys(newPlayers);
+      const currentIndex = keys.indexOf(name);
+      const nextIndex = (currentIndex + 1) % keys.length;
+      const nextPlayer = keys[nextIndex];
+      db.ref(`rooms/${room}`).update({ turn: nextPlayer });
+    }
+
+    db.ref(`rooms/${room}/players`).on("value", snapshot => {
+      allPlayers = snapshot.val() || {};
+      renderBoard(allPlayers);
+      updatePlayerList(allPlayers);
+    });
+
+    db.ref(`rooms/${room}/turn`).on("value", snapshot => {
+      const turn = snapshot.val();
+      if (!turn || !allPlayers[turn]) {
+        // If turn is missing or invalid, initialize turn
+        const firstPlayer = Object.keys(allPlayers)[0];
+        db.ref(`rooms/${room}`).update({ turn: firstPlayer });
+      } else {
+        if (turn === name) {
+          turnInfo.textContent = `🎯 Your turn!`;
+          rollBtn.disabled = false;
+        } else {
+          turnInfo.textContent = `⏳ Waiting for ${turn}'s turn...`;
+          rollBtn.disabled = true;
+        }
+      }
+    });
+
+    rollBtn.addEventListener("click", () => {
+      rollBtn.disabled = true;
+      const roll = Math.floor(Math.random() * 6) + 1;
+      const playerRef = db.ref(`rooms/${room}/players/${name}`);
+
+      playerRef.once("value").then(snapshot => {
+        let pos = snapshot.val().position;
+        let newPos = pos + roll;
+        if (newPos > 100) newPos = 100;
+
+        let action = `🎲 You rolled a ${roll}, moved to ${newPos}`;
+
+        if (snakes[newPos]) {
+          action = `😵 Bitten by a snake! Slid down to ${snakes[newPos]}`;
+          newPos = snakes[newPos];
+        } else if (ladders[newPos]) {
+          action = `🎉 Climbed a ladder! Up to ${ladders[newPos]}`;
+          newPos = ladders[newPos];
+        }
+
+        if (newPos === 100) {
+          msg.textContent = `🏆 ${name} wins the game!`;
+          alert(`🎉 ${name} reached 100 and won!`);
+          playerRef.update({ position: 100 });
+          db.ref(`rooms/${room}/turn`).remove(); // stop turns
+          return;
+        }
+
+        playerRef.update({ position: newPos });
+        msg.textContent = action;
+        setTurn(allPlayers); // Pass turn
+      });
+    });
+  </script>
 </body>
 </html>
