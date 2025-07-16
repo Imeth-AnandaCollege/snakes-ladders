@@ -1,29 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Snakes & Ladders - Game</title>
+  <title>Game Room</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="game-bg">
-
   <h1>🎲 Welcome to the Game Room</h1>
-  <p id="welcome"></p>
-
-  <h3>Players in this Room</h3>
+  <div id="welcome"></div>
+  <div id="turnInfo"></div>
   <ul id="playerList"></ul>
-
-  <h4 id="turnInfo">🔁 Waiting for your turn...</h4>
-
   <div id="board"></div>
-  <button id="rollBtn" disabled>🎲 Roll Dice</button>
-  <p id="eventMsg"></p>
+  <button id="rollBtn">🎲 Roll Dice</button>
+  <div id="eventMsg"></div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
-  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAU0Iosij4EjVIWJoWrzdglN4VG8m-BrDs",
       authDomain: "snakes-ladders-multiplay-8cef2.firebaseapp.com",
@@ -33,134 +27,120 @@
       messagingSenderId: "884472605666",
       appId: "1:884472605666:web:6e3d428f7bc6a0cc78a7bb"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
 
-    const params = new URLSearchParams(location.search);
-    const room = params.get("room");
-    const name = params.get("name");
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-    document.getElementById("welcome").textContent = `Hello ${name}, welcome to room "${room}"!`;
-
-    const snakes = {
-      16: 6, 47: 26, 49: 11, 56: 53, 62: 19,
-      64: 60, 87: 24, 93: 73, 95: 75, 98: 78
-    };
-
-    const ladders = {
-      1: 38, 4: 14, 9: 31, 21: 42, 28: 84,
-      36: 44, 51: 67, 71: 91, 80: 100
-    };
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get("room");
+    const name = urlParams.get("name");
 
     const board = document.getElementById("board");
-    const msg = document.getElementById("eventMsg");
+    const welcome = document.getElementById("welcome");
     const rollBtn = document.getElementById("rollBtn");
+    const eventMsg = document.getElementById("eventMsg");
+    const playerList = document.getElementById("playerList");
     const turnInfo = document.getElementById("turnInfo");
 
-    let allPlayers = {};
+    welcome.textContent = `Hello ${name}, welcome to room "${room}"!`;
 
-    function renderBoard(players = {}) {
+    const snakes = { 16: 6, 47: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
+    const ladders = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
+
+    const createBoard = () => {
       board.innerHTML = "";
+      let toggle = true;
       for (let row = 9; row >= 0; row--) {
-        let reverse = row % 2 === 1;
+        let cols = [];
         for (let col = 0; col < 10; col++) {
-          let num = row * 10 + (reverse ? (9 - col + 1) : col + 1);
+          let cellNum = row * 10 + (toggle ? col + 1 : 10 - col);
           const div = document.createElement("div");
           div.className = "cell";
-          if (snakes[num]) div.classList.add("snake");
-          if (ladders[num]) div.classList.add("ladder");
+          div.dataset.cell = cellNum;
 
-          div.innerHTML = `<span class="cell-num">${num}</span>`;
+          if (snakes[cellNum]) div.classList.add("snake");
+          if (ladders[cellNum]) div.classList.add("ladder");
 
-          for (const playerName in players) {
-            const p = players[playerName];
-            if (p.position === num) {
-              const token = document.createElement("div");
-              token.className = "player";
-              token.textContent = p.emoji;
-              div.appendChild(token);
-            }
-          }
+          const num = document.createElement("div");
+          num.className = "number";
+          num.textContent = cellNum;
+          div.appendChild(num);
 
           board.appendChild(div);
         }
+        toggle = !toggle;
       }
-    }
+    };
 
-    function updatePlayerList(players) {
-      const playerList = document.getElementById("playerList");
-      playerList.innerHTML = "";
-      for (const player in players) {
-        const li = document.createElement("li");
-        li.textContent = `${players[player].emoji} ${player}`;
-        playerList.appendChild(li);
-      }
-    }
+    createBoard();
 
-    function setTurn(newPlayers) {
-      const keys = Object.keys(newPlayers);
-      const currentIndex = keys.indexOf(name);
-      const nextIndex = (currentIndex + 1) % keys.length;
-      const nextPlayer = keys[nextIndex];
-      db.ref(`rooms/${room}`).update({ turn: nextPlayer });
-    }
+    const updatePlayers = () => {
+      const playersRef = ref(db, `rooms/${room}/players`);
+      onValue(playersRef, snapshot => {
+        const data = snapshot.val();
+        playerList.innerHTML = "";
+        document.querySelectorAll(".player").forEach(p => p.remove());
 
-    db.ref(`rooms/${room}/players`).on("value", snapshot => {
-      allPlayers = snapshot.val() || {};
-      renderBoard(allPlayers);
-      updatePlayerList(allPlayers);
-    });
+        for (let player in data) {
+          const emoji = data[player].emoji;
+          const pos = data[player].position;
+          const li = document.createElement("li");
+          li.textContent = `${emoji} ${player}`;
+          playerList.appendChild(li);
 
-    db.ref(`rooms/${room}/turn`).on("value", snapshot => {
-      const turn = snapshot.val();
-      if (!turn || !allPlayers[turn]) {
-        // If turn is missing or invalid, initialize turn
-        const firstPlayer = Object.keys(allPlayers)[0];
-        db.ref(`rooms/${room}`).update({ turn: firstPlayer });
-      } else {
-        if (turn === name) {
-          turnInfo.textContent = `🎯 Your turn!`;
-          rollBtn.disabled = false;
-        } else {
-          turnInfo.textContent = `⏳ Waiting for ${turn}'s turn...`;
-          rollBtn.disabled = true;
+          const cell = document.querySelector(`.cell[data-cell="${pos}"]`);
+          if (cell) {
+            const span = document.createElement("span");
+            span.className = "player";
+            span.textContent = emoji;
+            cell.appendChild(span);
+          }
         }
-      }
-    });
-
-    rollBtn.addEventListener("click", () => {
-      rollBtn.disabled = true;
-      const roll = Math.floor(Math.random() * 6) + 1;
-      const playerRef = db.ref(`rooms/${room}/players/${name}`);
-
-      playerRef.once("value").then(snapshot => {
-        let pos = snapshot.val().position;
-        let newPos = pos + roll;
-        if (newPos > 100) newPos = 100;
-
-        let action = `🎲 You rolled a ${roll}, moved to ${newPos}`;
-
-        if (snakes[newPos]) {
-          action = `😵 Bitten by a snake! Slid down to ${snakes[newPos]}`;
-          newPos = snakes[newPos];
-        } else if (ladders[newPos]) {
-          action = `🎉 Climbed a ladder! Up to ${ladders[newPos]}`;
-          newPos = ladders[newPos];
-        }
-
-        if (newPos === 100) {
-          msg.textContent = `🏆 ${name} wins the game!`;
-          alert(`🎉 ${name} reached 100 and won!`);
-          playerRef.update({ position: 100 });
-          db.ref(`rooms/${room}/turn`).remove(); // stop turns
-          return;
-        }
-
-        playerRef.update({ position: newPos });
-        msg.textContent = action;
-        setTurn(allPlayers); // Pass turn
       });
+    };
+
+    const nextTurn = (players, current) => {
+      const keys = Object.keys(players);
+      const index = keys.indexOf(current);
+      return keys[(index + 1) % keys.length];
+    };
+
+    onValue(ref(db, `rooms/${room}/turn`), snapshot => {
+      const turn = snapshot.val();
+      turnInfo.textContent = `🎯 Turn: ${turn}`;
+      rollBtn.disabled = (turn !== name);
     });
+
+    updatePlayers();
+
+    rollBtn.onclick = async () => {
+      const roll = Math.floor(Math.random() * 6) + 1;
+      eventMsg.textContent = `${name} rolled a ${roll}`;
+
+      const playerRef = ref(db, `rooms/${room}/players/${name}`);
+      const snap = await get(playerRef);
+      let pos = snap.val().position + roll;
+
+      if (snakes[pos]) {
+        eventMsg.textContent += ` 😬 Oh no! Snake!`;
+        pos = snakes[pos];
+      } else if (ladders[pos]) {
+        eventMsg.textContent += ` 🎉 Climbed a ladder!`;
+        pos = ladders[pos];
+      }
+
+      if (pos >= 100) {
+        pos = 100;
+        alert(`${name} wins! 🎉`);
+      }
+
+      await update(playerRef, { position: pos });
+
+      const playersSnap = await get(ref(db, `rooms/${room}/players`));
+      const players = playersSnap.val();
+      const next = nextTurn(players, name);
+      await set(ref(db, `rooms/${room}/turn`), next);
+    };
   </script>
 </body>
 </html>
